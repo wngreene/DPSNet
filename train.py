@@ -98,11 +98,11 @@ def main():
 
     print("=> fetching scenes in '{}'".format(args.data))
     train_stereo_dataset = GTASfMStereoDataset(
-        args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt")
+        args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt", 0, None, True)
     train_set = StereoSequenceFolder(train_stereo_dataset, transform=train_transform)
 
     val_stereo_dataset = GTASfMStereoDataset(
-        args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100)
+        args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100, None, True)
     val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
 
     print('{} samples found in train_set'.format(len(train_set)))
