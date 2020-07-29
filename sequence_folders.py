@@ -1,6 +1,8 @@
 import torch.utils.data as data
 import numpy as np
-from scipy.misc import imread
+# from scipy.misc import imread
+from imageio import imread
+from PIL import Image
 from path import Path
 import random
 
