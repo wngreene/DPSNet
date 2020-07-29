@@ -13,7 +13,7 @@ import torchvision as tv
 import numpy as np
 
 # from utils import depthmap_utils
-import depthmap_utils
+from stereo_dataset import depthmap_utils
 
 def read_stereo_pairs(image_file, replace_jpg_with_png=False):
     """Read in a text file defining a set of stereo pairs.

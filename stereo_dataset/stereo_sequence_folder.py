@@ -8,7 +8,7 @@ import numpy as np
 
 import torch.utils.data as tud
 
-from gta_sfm_dataset import GTASfMStereoDataset
+from stereo_dataset.gta_sfm_dataset import GTASfMStereoDataset
 
 class StereoSequenceFolder(tud.Dataset):
     def __init__(self, stereo_dataset, transform=None):
