@@ -1,0 +1,12 @@
+torch
+torchvision
+scipy
+argparse
+tensorboardX
+progressbar2
+blessings
+opencv-python
+imageio
+joblib
+h5py
+lz4
