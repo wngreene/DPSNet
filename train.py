@@ -102,7 +102,7 @@ def main():
     train_set = StereoSequenceFolder(train_stereo_dataset, transform=train_transform)
 
     val_stereo_dataset = GTASfMStereoDataset(
-        args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt")
+        args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100)
     val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
 
     # train_set = SequenceFolder(
