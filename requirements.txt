@@ -1,6 +1,7 @@
 ipython
 torch
 torchvision
+pillow
 scipy
 argparse
 tensorboardX
