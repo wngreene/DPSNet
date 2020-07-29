@@ -24,7 +24,7 @@ class StereoSequenceFolder(tud.Dataset):
 
         tgt_img = np.array(sample["left_image"]).astype(np.float32)
         ref_imgs = [np.array(sample["right_image"]).astype(np.float32)]
-        T_left_in_right = np.linalg.inverse(sample["T_right_in_left"])
+        T_left_in_right = np.linalg.inv(sample["T_right_in_left"])
         ref_poses = [T_left_in_right[:3, :].reshape((1, 3, 4))]
         intrinsics = sample["K"]
         tgt_depth = sample["left_depthmap_true"]
