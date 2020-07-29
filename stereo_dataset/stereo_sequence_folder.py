@@ -30,10 +30,10 @@ class StereoSequenceFolder(tud.Dataset):
         tgt_depth = sample["left_depthmap_true"]
 
         if self.transform is not None:
-            imgs, tgt_depth, intrinsics = self.transform([tgt_img] + ref_imgs, tgt_depth, np.copy(sample['intrinsics']))
+            imgs, tgt_depth, intrinsics = self.transform([tgt_img] + ref_imgs, tgt_depth, np.copy(intrinsics))
             tgt_img = imgs[0]
             ref_imgs = imgs[1:]
         else:
-            intrinsics = np.copy(sample['intrinsics'])
+            intrinsics = np.copy(intrinsics)
 
         return tgt_img, ref_imgs, ref_poses, intrinsics, np.linalg.inv(intrinsics), tgt_depth
