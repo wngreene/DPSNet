@@ -9,9 +9,11 @@ import glob
 
 import numpy as np
 
-from stereo import stereo_dataset as sd
+# from stereo import stereo_dataset as sd
+import stereo_dataset as sd
 
-from utils import depthmap_utils
+# from utils import depthmap_utils
+import depthmap_utils
 
 def sample_comparison_frames_with_poses(
         images, poses, num_comparison_frames,
