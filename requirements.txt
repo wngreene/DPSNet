@@ -7,6 +7,7 @@ argparse
 tensorboardX
 progressbar2
 blessings
+path.py
 opencv-python
 imageio
 joblib
