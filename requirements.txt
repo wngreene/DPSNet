@@ -1,3 +1,4 @@
+ipython
 torch
 torchvision
 scipy
