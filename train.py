@@ -86,7 +86,7 @@ def main():
     normalize = custom_transforms.Normalize(mean=[0.5, 0.5, 0.5],
                                             std=[0.5, 0.5, 0.5])
     train_transform = custom_transforms.Compose([
-        custom_transforms.RandomScaleCrop(),
+        # custom_transforms.RandomScaleCrop(),
         custom_transforms.ArrayToTensor(),
         normalize
     ])
