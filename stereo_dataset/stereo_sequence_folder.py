@@ -19,7 +19,7 @@ class StereoSequenceFolder(tud.Dataset):
     def __len__(self):
         return len(self.stereo_dataset)
 
-    def __getitem(self, idx):
+    def __getitem__(self, idx):
         sample = self.stereo_dataset[idx]
 
         tgt_img = np.array(sample["left_image"]).astype(np.float32)
