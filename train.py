@@ -105,6 +105,9 @@ def main():
         args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100)
     val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
 
+    print('{} samples found in train_set'.format(len(train_set)))
+    print('{} samples found in val_set'.format(len(val_set)))
+
     # train_set = SequenceFolder(
     #     args.data,
     #     transform=train_transform,
@@ -117,9 +120,9 @@ def main():
     #     seed=args.seed,
     #     ttype=args.ttype2
     # )
+    # print('{} samples found in {} train scenes'.format(len(train_set), len(train_set.scenes)))
+    # print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
 
-    print('{} samples found in {} train scenes'.format(len(train_set), len(train_set.scenes)))
-    print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=args.batch_size, shuffle=True,
         num_workers=args.workers, pin_memory=True)
