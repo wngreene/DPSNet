@@ -21,6 +21,9 @@ from itertools import chain
 from tensorboardX import SummaryWriter
 from sequence_folders import SequenceFolder
 
+from stereo_dataset.gta_sfm_dataset import GTASfMStereoDataset
+from stereo_dataset.stereo_sequence_folder import StereoSequenceFolder
+
 parser = argparse.ArgumentParser(description='Structure from Motion Learner training on KITTI and CityScapes Dataset',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -94,18 +97,26 @@ def main():
     valid_transform = custom_transforms.Compose([custom_transforms.ArrayToTensor(), normalize])
 
     print("=> fetching scenes in '{}'".format(args.data))
-    train_set = SequenceFolder(
-        args.data,
-        transform=train_transform,
-        seed=args.seed,
-        ttype=args.ttype
-    )
-    val_set = SequenceFolder(
-        args.data,
-        transform=valid_transform,
-        seed=args.seed,
-        ttype=args.ttype2
-    )
+    train_stereo_dataset = GTASfMStereoDataset(
+        args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt")
+    train_set = StereoSequenceFolder(train_stereo_dataset, transform=train_transform)
+
+    val_stereo_dataset = GTASfMStereoDataset(
+        args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt")
+    val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
+
+    # train_set = SequenceFolder(
+    #     args.data,
+    #     transform=train_transform,
+    #     seed=args.seed,
+    #     ttype=args.ttype
+    # )
+    # val_set = SequenceFolder(
+    #     args.data,
+    #     transform=valid_transform,
+    #     seed=args.seed,
+    #     ttype=args.ttype2
+    # )
 
     print('{} samples found in {} train scenes'.format(len(train_set), len(train_set.scenes)))
     print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
