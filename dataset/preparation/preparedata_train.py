@@ -9,7 +9,8 @@ imageio.plugins.freeimage.download()
 from imageio.plugins import freeimage
 import h5py
 from lz4.block import decompress
-import scipy.misc
+# import scipy.misc
+from PIL import Image
 import cv2
 
 from path import Path
@@ -58,7 +59,9 @@ def dump_example(dataset_name):
                 elif dt_type == "image":
                     img = imageio.imread(img.tobytes())
                     dump_img_file = dump_dir/'{:04d}.jpg'.format(f_idx)
-                    scipy.misc.imsave(dump_img_file, img)
+                    # scipy.misc.imsave(dump_img_file, img)
+                    pil_im = Image.fromarray(img)
+                    pil_im.save(dump_img_file)
 
         dump_cam_file = dump_dir/'cam.txt'
         np.savetxt(dump_cam_file, intrinsics)
