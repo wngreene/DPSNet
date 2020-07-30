@@ -67,6 +67,7 @@ parser.add_argument('-f', '--training-output-freq', type=int, help='frequence fo
 parser.add_argument('--nlabel', type=int ,default=64, help='number of label')
 parser.add_argument('--mindepth', type=float ,default=0.5, help='minimum depth')
 parser.add_argument("--normalize_depths", action="store_true", help="Normalize poses/depths by groundtruth mean depth.")
+parser.add_argument("--stereo_dataset", action="store_true", help="Use StereoDataset data.")
 
 n_iter = 0
 
@@ -98,31 +99,34 @@ def main():
     valid_transform = custom_transforms.Compose([custom_transforms.ArrayToTensor(), normalize])
 
     print("=> fetching scenes in '{}'".format(args.data))
-    train_stereo_dataset = GTASfMStereoDataset(
-        args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt", 0, None, True)
-    train_set = StereoSequenceFolder(train_stereo_dataset, transform=train_transform)
 
-    val_stereo_dataset = GTASfMStereoDataset(
-        args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100, None, True)
-    val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
+    if args.stereo_dataset:
+        # GTA-SfM
+        train_stereo_dataset = GTASfMStereoDataset(
+            args.data, "./stereo_dataset/gta_sfm_overlap0.5_train.txt", 0, None, True)
+        train_set = StereoSequenceFolder(train_stereo_dataset, transform=train_transform)
 
-    print('{} samples found in train_set'.format(len(train_set)))
-    print('{} samples found in val_set'.format(len(val_set)))
-
-    # train_set = SequenceFolder(
-    #     args.data,
-    #     transform=train_transform,
-    #     seed=args.seed,
-    #     ttype=args.ttype
-    # )
-    # val_set = SequenceFolder(
-    #     args.data,
-    #     transform=valid_transform,
-    #     seed=args.seed,
-    #     ttype=args.ttype2
-    # )
-    # print('{} samples found in {} train scenes'.format(len(train_set), len(train_set.scenes)))
-    # print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
+        val_stereo_dataset = GTASfMStereoDataset(
+            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100, None, True)
+        val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
+        print('{} samples found in train_set'.format(len(train_set)))
+        print('{} samples found in val_set'.format(len(val_set)))
+    else:
+        # DeMoN data.
+        train_set = SequenceFolder(
+            args.data,
+            transform=train_transform,
+            seed=args.seed,
+            ttype=args.ttype
+        )
+        val_set = SequenceFolder(
+            args.data,
+            transform=valid_transform,
+            seed=args.seed,
+            ttype=args.ttype2
+        )
+        print('{} samples found in {} train scenes'.format(len(train_set), len(train_set.scenes)))
+        print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=args.batch_size, shuffle=True,
