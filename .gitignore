@@ -2,4 +2,8 @@ dataset/test/*
 *.pyc
 __pycache__/*
 dataset/preparation/testdata/*
+dataset/preparation/traindata/*
+dataset/train/scenes*
+dataset/train/sun3d*
+dataset/train/rgbd*
 *~
