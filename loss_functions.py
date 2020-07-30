@@ -24,13 +24,13 @@ def compute_errors_test(gt, pred):
 
     return abs_rel, abs_diff, sq_rel, rmse, rmse_log, a1, a2, a3
 
-def compute_errors_train(gt, pred, valid):
+def compute_errors_train(gt, pred, valid, scale_factor=1.0):
     abs_diff, abs_rel, sq_rel, a1, a2, a3 = 0,0,0,0,0,0
     batch_size = gt.size(0)
 
     for current_gt, current_pred, current_valid in zip(gt, pred, valid):
-        valid_gt = current_gt[current_valid]
-        valid_pred = current_pred[current_valid]
+        valid_gt = scale_factor * current_gt[current_valid]
+        valid_pred = scale_factor * current_pred[current_valid]
 
         if len(valid_gt) == 0:
             continue

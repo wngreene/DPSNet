@@ -66,6 +66,7 @@ parser.add_argument('-f', '--training-output-freq', type=int, help='frequence fo
                     metavar='N', default=100)
 parser.add_argument('--nlabel', type=int ,default=64, help='number of label')
 parser.add_argument('--mindepth', type=float ,default=0.5, help='minimum depth')
+parser.add_argument("--normalize_depths", action="store_true", help="Normalize poses/depths by groundtruth mean depth.")
 
 n_iter = 0
 
@@ -211,6 +212,19 @@ def train(args, train_loader, dpsnet, optimizer, epoch_size, train_writer):
         intrinsics_inv_var = Variable(intrinsics_inv.cuda())
         tgt_depth_var = Variable(tgt_depth.cuda()).cuda()
 
+        mean_depth = 1.0
+        if args.normalize_depths:
+            # Scale poses and gt depths by mean depth. Network output should be
+            # multiplied by mean_depth to get back to metric units. We only need
+            # metric depths when computing metrics.
+            assert(len(ref_poses_var) == 1)
+            mean_depth = torch.mean(tgt_depth[tgt_depth < 1000])
+            tgt_depth /= mean_depth
+            tgt_depth_var /= mean_depth
+            for ref_idx in range(len(ref_poses_var)):
+                ref_poses[ref_idx][:, :, :3, 3] /= mean_depth
+                ref_poses_var[ref_idx][:, :, :3, 3] /= mean_depth
+
         # compute output
         pose = torch.cat(ref_poses_var,1)
 
@@ -296,6 +310,19 @@ def validate_with_gt(args, val_loader, dpsnet, epoch, output_writers=[]):
             intrinsics_inv_var = Variable(intrinsics_inv.cuda())
             tgt_depth_var = Variable(tgt_depth.cuda())
 
+            mean_depth = 1.0
+            if args.normalize_depths:
+                # Scale poses and gt depths by mean depth. Network output should be
+                # multiplied by mean_depth to get back to metric units. We only need
+                # metric depths when computing metrics.
+                assert(len(ref_poses_var) == 1)
+                mean_depth = torch.mean(tgt_depth[tgt_depth < 1000])
+                tgt_depth /= mean_depth
+                tgt_depth_var /= mean_depth
+                for ref_idx in range(len(ref_poses_var)):
+                    ref_poses[ref_idx][:, :, :3, 3] /= mean_depth
+                    ref_poses_var[ref_idx][:, :, :3, 3] /= mean_depth
+
             pose = torch.cat(ref_poses_var,1)
 
             output_depth = dpsnet(tgt_img_var, ref_imgs_var, pose, intrinsics_var, intrinsics_inv_var)
@@ -320,7 +347,7 @@ def validate_with_gt(args, val_loader, dpsnet, epoch, output_writers=[]):
                 output_writers[index].add_image('val Dispnet Output Normalized', tensor2array(output_disp.data[0].cpu(), max_value=args.nlabel, colormap='bone'), epoch)
                 output_writers[index].add_image('val Depth Output', tensor2array(output_depth.data[0].cpu(), max_value=args.nlabel*args.mindepth*0.3), epoch)
 
-            errors.update(compute_errors_train(tgt_depth, output, mask))
+            errors.update(compute_errors_train(tgt_depth, output, mask, mean_depth))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
