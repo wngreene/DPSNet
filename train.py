@@ -245,7 +245,8 @@ def train(args, train_loader, dpsnet, optimizer, epoch_size, train_writer):
 
         if args.training_output_freq > 0 and n_iter % args.training_output_freq == 0:
 
-            train_writer.add_image('train Input', tensor2array(tgt_img[0]), n_iter)
+            train_writer.add_image('train left input', tensor2array(tgt_img[0]), n_iter)
+            train_writer.add_image('train right input', tensor2array(ref_imgs[0][0]), n_iter)
             
             depth_to_show = tgt_depth_var.data[0].cpu()
             depth_to_show[depth_to_show > args.nlabel*args.mindepth] = args.nlabel*args.mindepth
@@ -335,7 +336,8 @@ def validate_with_gt(args, val_loader, dpsnet, epoch, output_writers=[]):
             if log_outputs and i % 100 == 0 and i/100 < len(output_writers):
                 index = int(i//100)
                 if epoch == 0:
-                    output_writers[index].add_image('val Input', tensor2array(tgt_img[0]), 0)
+                    output_writers[index].add_image('val left input', tensor2array(tgt_img[0]), 0)
+                    output_writers[index].add_image('val right input', tensor2array(ref_imgs[0][0]), 0)
                     depth_to_show = tgt_depth_var.data[0].cpu()
                     depth_to_show[depth_to_show > args.nlabel*args.mindepth] = args.nlabel*args.mindepth
                     disp_to_show = (args.nlabel*args.mindepth/depth_to_show)
