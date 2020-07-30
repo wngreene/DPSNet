@@ -282,7 +282,7 @@ def train(args, train_loader, dpsnet, optimizer, epoch_size, train_writer):
             writer = csv.writer(csvfile, delimiter='\t')
             writer.writerow([loss.item()])
         if i % args.print_freq == 0:
-            print('Train: Time {} Data {} Loss {}'.format(batch_time, data_time, losses))
+            print('Step: {} Train: Time {} Data {} Loss {}'.format(n_iter, batch_time, data_time, losses))
         if i >= epoch_size - 1:
             break
 
@@ -353,7 +353,7 @@ def validate_with_gt(args, val_loader, dpsnet, epoch, output_writers=[]):
             batch_time.update(time.time() - end)
             end = time.time()
             if i % args.print_freq == 0:
-                print('valid: Time {} Abs Error {:.4f} ({:.4f})'.format(batch_time, errors.val[0], errors.avg[0]))
+                print('Epoch: {} valid: Time {} Abs Error {:.4f} ({:.4f})'.format(epoch, batch_time, errors.val[0], errors.avg[0]))
 
     return errors.avg, error_names
 
