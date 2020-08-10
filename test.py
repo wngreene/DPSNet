@@ -62,7 +62,7 @@ def main():
 
     if args.stereo_dataset:
         val_stereo_dataset = GTASfMStereoDataset(
-            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100, None, True)
+            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 0, None, True)
         val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
         print('{} samples found in val_set'.format(len(val_set)))
     else:
