@@ -12,11 +12,13 @@ import torch.optim
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data
+import torchvision as tv
 import custom_transforms
 from utils import tensor2array
 from loss_functions import compute_errors_test
 from sequence_folders import SequenceFolder
 
+import stereo_dataset.stereo_dataset as sd
 from stereo_dataset.gta_sfm_dataset import GTASfMStereoDataset
 from stereo_dataset.stereo_sequence_folder import StereoSequenceFolder
 
@@ -51,6 +53,7 @@ parser.add_argument('--print-freq', default=1, type=int,
 
 parser.add_argument("--normalize_depths", action="store_true", help="Normalize poses/depths by groundtruth mean depth.")
 parser.add_argument("--stereo_dataset", action="store_true", help="Use StereoDataset data.")
+parser.add_argument("--roll_right_image_180", action="store_true", help="Roll right images by 180 degrees.")
 
 def main():
     args = parser.parse_args()
@@ -61,8 +64,12 @@ def main():
     valid_transform = custom_transforms.Compose([custom_transforms.ArrayToTensor(), normalize])
 
     if args.stereo_dataset:
+        roll_transform = None
+        if args.roll_right_image_180:
+            right_roll = lambda sample: sd.roll_right_image_180(sample)
+            roll_transform = tv.transforms.Compose([tv.transforms.Lambda(right_roll)])
         val_stereo_dataset = GTASfMStereoDataset(
-            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 0, None, True)
+            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 0, roll_transform, True)
         val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
         print('{} samples found in val_set'.format(len(val_set)))
     else:

@@ -69,15 +69,22 @@ def get_training_transforms(params):
 
     return transforms
 
-def get_testing_transforms(params):
+def get_testing_transforms(params, roll_right_image180=False):
     """Return transforms to apply to testing images.
     """
     to_tensor = lambda sample: to_tensor_stereo(sample)
     normalize = lambda sample: normalize_stereo(sample)
 
-    transforms = tv.transforms.Compose([ResizeImageStereo(params["size"][0], params["size"][1]),
-                                        tv.transforms.Lambda(to_tensor),
-                                        tv.transforms.Lambda(normalize)])
+    if roll_right_image180:
+        roll_right = lambda sample: roll_right_image_180(sample)
+        transforms = tv.transforms.Compose([tv.transforms.Lambda(roll_right),
+                                            ResizeImageStereo(params["size"][0], params["size"][1]),
+                                            tv.transforms.Lambda(to_tensor),
+                                            tv.transforms.Lambda(normalize)])
+    else:
+        transforms = tv.transforms.Compose([ResizeImageStereo(params["size"][0], params["size"][1]),
+                                            tv.transforms.Lambda(to_tensor),
+                                            tv.transforms.Lambda(normalize)])
 
     return transforms
 
@@ -104,6 +111,30 @@ def to_tensor_stereo(sample):
     if "left_depthmap_true" in sample:
         sample["left_depthmap_true"] = tv.transforms.functional.to_tensor(sample["left_depthmap_true"])
         sample["right_depthmap_true"] = tv.transforms.functional.to_tensor(sample["right_depthmap_true"])
+
+    return sample
+
+def roll_right_image_180(sample):
+    """Roll right image by 180 degrees.
+    """
+    right_image = np.array(sample["right_image"])
+    right_rolled = np.copy(np.flipud(np.fliplr(right_image)))
+    sample["right_image"] = PIL.Image.fromarray(right_rolled.astype(np.uint8), "RGB")
+
+    # Rolling 180 degrees around z axis yields (x, y, z) -> (-x, -y, z).
+    T_rolled_in_right = np.eye(4, dtype=np.float32)
+    T_rolled_in_right[0, 0] = -1.0
+    T_rolled_in_right[1, 1] = -1.0
+
+    T_right_in_left = sample["T_right_in_left"]
+    T_rolled_in_left = np.dot(T_right_in_left, T_rolled_in_right)
+    sample["T_right_in_left"] = T_rolled_in_left
+
+    if "right_disparity_true" in sample:
+        sample["right_disparity_true"] = np.copy(np.flipud(np.fliplr(sample["right_disparity_true"])))
+
+    if "right_depthmap_true" in sample:
+        sample["right_depthmap_true"] = np.copy(np.flipud(np.fliplr(sample["right_depthmap_true"])))
 
     return sample
 
