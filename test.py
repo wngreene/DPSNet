@@ -17,6 +17,9 @@ from utils import tensor2array
 from loss_functions import compute_errors_test
 from sequence_folders import SequenceFolder
 
+from stereo_dataset.gta_sfm_dataset import GTASfMStereoDataset
+from stereo_dataset.stereo_sequence_folder import StereoSequenceFolder
+
 import os
 from path import Path
 from scipy.misc import imsave
@@ -44,6 +47,9 @@ parser.add_argument('--output-print', action='store_true', help='print output de
 parser.add_argument('--print-freq', default=1, type=int,
                     metavar='N', help='print frequency')
 
+parser.add_argument("--normalize_depths", action="store_true", help="Normalize poses/depths by groundtruth mean depth.")
+parser.add_argument("--stereo_dataset", action="store_true", help="Use StereoDataset data.")
+
 def main():
     args = parser.parse_args()
     output_dir = Path(args.output_dir)
@@ -51,15 +57,22 @@ def main():
     normalize = custom_transforms.Normalize(mean=[0.5, 0.5, 0.5],
                                             std=[0.5, 0.5, 0.5])
     valid_transform = custom_transforms.Compose([custom_transforms.ArrayToTensor(), normalize])
-    val_set = SequenceFolder(
-        args.data,
-        transform=valid_transform,
-        seed=args.seed,
-        ttype=args.ttype,
-        sequence_length=args.sequence_length
-    )
 
-    print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
+    if args.stereo_dataset:
+        val_stereo_dataset = GTASfMStereoDataset(
+            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 100, None, True)
+        val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
+        print('{} samples found in val_set'.format(len(val_set)))
+    else:
+        val_set = SequenceFolder(
+            args.data,
+            transform=valid_transform,
+            seed=args.seed,
+            ttype=args.ttype,
+            sequence_length=args.sequence_length
+        )
+        print('{} samples found in {} valid scenes'.format(len(val_set), len(val_set.scenes)))
+
     val_loader = torch.utils.data.DataLoader(
         val_set, batch_size=args.batch_size, shuffle=False,
         num_workers=args.workers, pin_memory=True)
@@ -85,6 +98,19 @@ def main():
                 intrinsics_inv_var = Variable(intrinsics_inv.cuda())
                 tgt_depth_var = Variable(tgt_depth.cuda())
 
+                mean_depth = 1.0
+                if args.normalize_depths:
+                    # Scale poses and gt depths by mean depth. Network output should be
+                    # multiplied by mean_depth to get back to metric units. We only need
+                    # metric depths when computing metrics.
+                    assert(len(ref_poses_var) == 1)
+                    mean_depth = torch.mean(tgt_depth[tgt_depth < 1000])
+                    tgt_depth /= mean_depth
+                    tgt_depth_var /= mean_depth
+                    for ref_idx in range(len(ref_poses_var)):
+                        ref_poses[ref_idx][:, :, :3, 3] /= mean_depth
+                        ref_poses_var[ref_idx][:, :, :3, 3] /= mean_depth
+
                 # compute output
                 pose = torch.cat(ref_poses_var,1)
                 start = time.time()
@@ -98,8 +124,8 @@ def main():
                 output_disp_ = torch.squeeze(output_disp.data.cpu(),1)
                 output_depth_ = torch.squeeze(output_depth.data.cpu(),1)
 
-                errors[0,:,i] = compute_errors_test(tgt_depth[mask], output_depth_[mask])
-                errors[1,:,i] = compute_errors_test(tgt_disp[mask], output_disp_[mask])
+                errors[0,:,i] = compute_errors_test(tgt_depth[mask], output_depth_[mask], mean_depth)
+                errors[1,:,i] = compute_errors_test(tgt_disp[mask], output_disp_[mask], mean_depth)
 
                 print('Elapsed Time {} Abs Error {:.4f}'.format(elps, errors[0,0,i]))
 
