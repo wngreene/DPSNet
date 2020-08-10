@@ -22,7 +22,9 @@ from stereo_dataset.stereo_sequence_folder import StereoSequenceFolder
 
 import os
 from path import Path
-from scipy.misc import imsave
+# from scipy.misc import imsave
+from PIL import Image
+
 from tensorboardX import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Structure from Motion Learner training on KITTI and CityScapes Dataset',
@@ -133,7 +135,10 @@ def main():
                     output_disp_n = (output_disp_).numpy()[0]
                     np.save(output_dir/'{:04d}{}'.format(i,'.npy'), output_disp_n)
                     disp = (255*tensor2array(torch.from_numpy(output_disp_n), max_value=args.nlabel, colormap='bone')).astype(np.uint8)
-                    imsave(output_dir/'{:04d}_disp{}'.format(i,'.png'), disp)
+                    # imsave(output_dir/'{:04d}_disp{}'.format(i,'.png'), disp)
+                    pil_disp = Image.fromarray(disp)
+                    pil_disp.save(output_dir/'{:04d}_disp{}'.format(i,'.png'))
+
 
 
     mean_errors = errors.mean(2)
