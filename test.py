@@ -91,6 +91,9 @@ def main():
     dpsnet.load_state_dict(weights['state_dict'])
     dpsnet.eval()
 
+    num_parameters = sum(p.numel() for p in dpsnet.parameters() if p.requires_grad)
+    print("Num parameters: {}".format(num_parameters))
+
     output_dir= Path(args.output_dir)
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
