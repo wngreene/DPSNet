@@ -4,8 +4,9 @@ from torch import nn
 import numpy as np
 
 def compute_errors_test(gt, pred, scale_factor=1.0):
-    gt = scale_factor * gt.numpy()
-    pred = scale_factor * pred.numpy()
+    gt = (scale_factor * gt).numpy()
+    pred = (scale_factor * pred).numpy()
+
     thresh = np.maximum((gt / pred), (pred / gt))
     a1 = (thresh < 1.25   ).mean()
     a2 = (thresh < 1.25 ** 2).mean()
