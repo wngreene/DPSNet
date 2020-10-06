@@ -13,3 +13,4 @@ imageio
 joblib
 h5py
 lz4
+matplotlib

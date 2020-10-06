@@ -3,6 +3,7 @@ from models import PSNet as PSNet
 import argparse
 import time
 import csv
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -56,6 +57,42 @@ parser.add_argument('--print-freq', default=1, type=int,
 parser.add_argument("--normalize_depths", action="store_true", help="Normalize poses/depths by groundtruth mean depth.")
 parser.add_argument("--stereo_dataset", action="store_true", help="Use StereoDataset data.")
 parser.add_argument("--roll_right_image_180", action="store_true", help="Roll right images by 180 degrees.")
+
+def write_images(output_dir, image_idx, depthmap_est, depthmap_true,
+                 disparity_est, disparity_true):
+    """Save colormapped depthmap images for debugging.
+    """
+    cmap = plt.get_cmap("magma")
+
+    vmin = 0.0
+    vmax = np.max(disparity_est)
+
+    disparity = np.copy(disparity_est)
+    debug = np.squeeze(cmap((disparity - vmin) / (vmax - vmin)))
+    debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
+    debug_image.save(os.path.join(output_dir, "disparity_{}_est.jpg".format(image_idx)))
+
+    disparity = np.copy(disparity_true)
+    debug = np.squeeze(cmap((disparity - vmin) / (vmax - vmin)))
+    debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
+    debug_image.save(os.path.join(output_dir, "disparity_{}_true.jpg".format(image_idx)))
+
+    # idepthmaps.
+    idepth_scale_factor = 5.0
+
+    idepth = np.copy(depthmap_est)
+    idepth[idepth > 0] = 1.0 / idepth[idepth > 0]
+    debug = np.squeeze(cmap(idepth_scale_factor * idepth))
+    debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
+    debug_image.save(os.path.join(output_dir, "idepthmap_{}_est.jpg".format(image_idx)))
+
+    idepth = np.copy(depthmap_true)
+    idepth[idepth > 0] = 1.0 / idepth[idepth > 0]
+    debug = np.squeeze(cmap(idepth_scale_factor * idepth))
+    debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
+    debug_image.save(os.path.join(output_dir, "idepthmap_{}_true.jpg".format(image_idx)))
+
+    return
 
 def main():
     args = parser.parse_args()
@@ -182,14 +219,24 @@ def main():
                 print('Elapsed Time({}/{}): {} Abs Error {:.4f}'.format(ii, len(val_loader), elps, errors[0,0,i]))
 
                 if args.output_print:
-                    output_disp_n = (output_disp_).numpy()[0]
-                    np.save(output_dir/'{:04d}{}'.format(i,'.npy'), output_disp_n)
-                    disp = (255*tensor2array(torch.from_numpy(output_disp_n), max_value=args.nlabel, colormap='bone')).astype(np.uint8)
-                    # imsave(output_dir/'{:04d}_disp{}'.format(i,'.png'), disp)
-                    pil_disp = Image.fromarray(disp)
-                    pil_disp.save(output_dir/'{:04d}_disp{}'.format(i,'.png'))
+                    # output_disp_n = (output_disp_).numpy()[0]
+                    # np.save(output_dir/'{:04d}{}'.format(i,'.npy'), output_disp_n)
+                    # disp = (255*tensor2array(torch.from_numpy(output_disp_n), max_value=args.nlabel, colormap='bone')).astype(np.uint8)
+                    # # imsave(output_dir/'{:04d}_disp{}'.format(i,'.png'), disp)
+                    # pil_disp = Image.fromarray(disp)
+                    # pil_disp.save(output_dir/'{:04d}_disp{}'.format(i,'.png'))
 
-
+                    # Save depthmaps.
+                    left_dir, file_and_ext = os.path.split(sample["left_filename"])
+                    left_dir = left_dir.replace(val_loader.dataset.stereo_dataset.data_dir, "") # Strip dataset prefix.
+                    left_output_dir = os.path.join(output_dir, left_dir[1:])
+                    image_num = os.path.splitext(file_and_ext)[0]
+                    if not os.path.exists(left_output_dir):
+                        os.makedirs(left_output_dir)
+                    assert(os.path.exists(left_output_dir))
+                    write_images(left_output_dir, image_num,
+                                 left_depthmap_est, sample["left_depthmap_true"],
+                                 left_disparity_est, sample["left_disparity_true"])
 
     mean_errors = errors.mean(2)
     error_names = ['abs_rel','abs_diff','sq_rel','rms','log_rms','a1','a2','a3']
