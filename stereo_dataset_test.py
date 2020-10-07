@@ -58,14 +58,14 @@ parser.add_argument("--normalize_depths", action="store_true", help="Normalize p
 parser.add_argument("--stereo_dataset", action="store_true", help="Use StereoDataset data.")
 parser.add_argument("--roll_right_image_180", action="store_true", help="Roll right images by 180 degrees.")
 
-def write_images(output_dir, image_idx, depthmap_est, depthmap_true,
+def write_images(output_dir, image_idx, idepthmap_est, idepthmap_true,
                  disparity_est, disparity_true):
     """Save colormapped depthmap images for debugging.
     """
     cmap = plt.get_cmap("magma")
 
     vmin = 0.0
-    vmax = np.max(disparity_est)
+    vmax = np.max(disparity_true)
 
     disparity = np.copy(disparity_est)
     debug = np.squeeze(cmap((disparity - vmin) / (vmax - vmin)))
@@ -78,17 +78,14 @@ def write_images(output_dir, image_idx, depthmap_est, depthmap_true,
     debug_image.save(os.path.join(output_dir, "disparity_{}_true.jpg".format(image_idx)))
 
     # idepthmaps.
-    idepth_scale_factor = 5.0
+    vmin = 0.0
+    vmax = np.max(idepthmap_true)
 
-    idepth = np.copy(depthmap_est)
-    idepth[idepth > 0] = 1.0 / idepth[idepth > 0]
-    debug = np.squeeze(cmap(idepth_scale_factor * idepth))
+    debug = np.squeeze(cmap((idepthmap_est - vmin) / (vmax - vmin)))
     debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
     debug_image.save(os.path.join(output_dir, "idepthmap_{}_est.jpg".format(image_idx)))
 
-    idepth = np.copy(depthmap_true)
-    idepth[idepth > 0] = 1.0 / idepth[idepth > 0]
-    debug = np.squeeze(cmap(idepth_scale_factor * idepth))
+    debug = np.squeeze(cmap((idepthmap_true - vmin) / (vmax - vmin)))
     debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
     debug_image.save(os.path.join(output_dir, "idepthmap_{}_true.jpg".format(image_idx)))
 
@@ -190,6 +187,13 @@ def main():
                 if args.stereo_dataset:
                     # Compute independent depth/disparity metrics.
                     left_depthmap_est = (output_depth_ * mean_depth).squeeze(0).numpy()
+
+                    left_idepthmap_true = np.copy(sample["left_depthmap_true"])
+                    left_idepthmap_true[left_idepthmap_true > 0.0] = 1.0 / left_idepthmap_true[left_idepthmap_true > 0.0]
+
+                    left_idepthmap_est = np.copy(left_depthmap_est)
+                    left_idepthmap_est[left_idepthmap_est > 0.0] = 1.0 / left_idepthmap_est[left_idepthmap_est > 0.0]
+
                     left_disparity_est = depthmap_to_disparity(sample["K"][:3, :3], sample["T_right_in_left"], left_depthmap_est)
 
                     # Compute depth metrics and write to file.
@@ -235,7 +239,7 @@ def main():
                         os.makedirs(left_output_dir)
                     assert(os.path.exists(left_output_dir))
                     write_images(left_output_dir, image_num,
-                                 left_depthmap_est, sample["left_depthmap_true"],
+                                 left_idepthmap_est, left_idepthmap_true,
                                  left_disparity_est, sample["left_disparity_true"])
 
     mean_errors = errors.mean(2)
