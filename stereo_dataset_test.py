@@ -172,11 +172,6 @@ def main():
                 output_disp = args.mindepth*args.nlabel/output_depth
 
                 mask = (tgt_depth <= args.maxdepth) & (tgt_depth >= args.mindepth) & (tgt_depth == tgt_depth)
-                if args.stereo_dataset:
-                    # Use mask defined from depthest.
-                    mask_np = (sample["left_disparity_true"] >= 0) & (sample["left_disparity_true"] < 192)
-                    mask = np.expand_dims(mask_np, 0)
-                    mask = torch.from_numpy(mask)
 
                 output_disp_ = torch.squeeze(output_disp.data.cpu(),1)
                 output_depth_ = torch.squeeze(output_depth.data.cpu(),1)
@@ -196,9 +191,15 @@ def main():
 
                     left_disparity_est = depthmap_to_disparity(sample["K"][:3, :3], sample["T_right_in_left"], left_depthmap_est)
 
+                    disparity_mask_np = (sample["left_disparity_true"] >= 0) & (sample["left_disparity_true"] < 192)
+                    disparity_mask_np = disparity_mask_np & (left_disparity_est >= 0) & (left_disparity_est < 192)
+
+                    depth_mask_np = (sample["left_depthmap_true"] > 0.0) & (sample["left_depthmap_true"] < 1e3)
+                    depth_mask_np = depth_mask_np & (left_depthmap_est > 0.0) & (left_depthmap_est < 1e3)
+
                     # Compute depth metrics and write to file.
                     depth_metrics_idx = metrics.get_depth_prediction_metrics(
-                        sample["left_depthmap_true"][mask_np], left_depthmap_est[mask_np])
+                        sample["left_depthmap_true"][depth_mask_np], left_depthmap_est[depth_mask_np])
                     depth_metrics_file = os.path.join(output_dir, "depth_metrics.txt")
                     if not os.path.exists(depth_metrics_file):
                         metrics.write_metrics_header(depth_metrics_file, depth_metrics_idx)
@@ -206,7 +207,7 @@ def main():
 
                     # Compute disparity metrics and write to file.
                     disparity_metrics_idx = metrics.get_disparity_metrics(
-                        sample["left_disparity_true"], left_disparity_est, mask_np)
+                        sample["left_disparity_true"], left_disparity_est, disparity_mask_np)
                     disparity_metrics_file = os.path.join(output_dir, "disparity_metrics.txt")
                     if not os.path.exists(disparity_metrics_file):
                         metrics.write_metrics_header(disparity_metrics_file, disparity_metrics_idx)
