@@ -105,7 +105,7 @@ def main():
             right_roll = lambda sample: sd.roll_right_image_180(sample)
             roll_transform = tv.transforms.Compose([tv.transforms.Lambda(right_roll)])
         val_stereo_dataset = GTASfMStereoDataset(
-            args.data, "./stereo_dataset/gta_sfm_overlap0.5_test.txt", 0, roll_transform, True)
+            args.data, "./stereo_dataset/gta_sfm_overlap0.5_1cmps_test.txt", 0, roll_transform, True)
         val_set = StereoSequenceFolder(val_stereo_dataset, transform=valid_transform)
         print('{} samples found in val_set'.format(len(val_set)))
     else:
