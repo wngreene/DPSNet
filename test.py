@@ -3,6 +3,7 @@ from models import PSNet as PSNet
 import argparse
 import time
 import csv
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -54,6 +55,24 @@ parser.add_argument('--print-freq', default=1, type=int,
 parser.add_argument("--normalize_depths", action="store_true", help="Normalize poses/depths by groundtruth mean depth.")
 parser.add_argument("--stereo_dataset", action="store_true", help="Use StereoDataset data.")
 parser.add_argument("--roll_right_image_180", action="store_true", help="Roll right images by 180 degrees.")
+
+def write_images(output_dir, image_idx, idepthmap_est, idepthmap_true):
+    """Save colormapped depthmap images for debugging.
+    """
+    cmap = plt.get_cmap("magma")
+
+    vmin = 0.0
+    vmax = np.max(idepthmap_true)
+
+    debug = np.squeeze(cmap((idepthmap_est - vmin) / (vmax - vmin)))
+    debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
+    debug_image.save(os.path.join(output_dir, "idepthmap_{}_est.jpg".format(image_idx)))
+
+    debug = np.squeeze(cmap((idepthmap_true - vmin) / (vmax - vmin)))
+    debug_image = Image.fromarray(np.uint8(debug[:, :, :3] * 255))
+    debug_image.save(os.path.join(output_dir, "idepthmap_{}_true.jpg".format(image_idx)))
+
+    return
 
 def main():
     args = parser.parse_args()
@@ -142,13 +161,35 @@ def main():
                 print('Elapsed Time {} Abs Error {:.4f}'.format(elps, errors[0,0,i]))
 
                 if args.output_print:
-                    output_disp_n = (output_disp_).numpy()[0]
-                    np.save(output_dir/'{:04d}{}'.format(i,'.npy'), output_disp_n)
-                    disp = (255*tensor2array(torch.from_numpy(output_disp_n), max_value=args.nlabel, colormap='bone')).astype(np.uint8)
-                    # imsave(output_dir/'{:04d}_disp{}'.format(i,'.png'), disp)
-                    pil_disp = Image.fromarray(disp)
-                    pil_disp.save(output_dir/'{:04d}_disp{}'.format(i,'.png'))
+                    # output_disp_n = (output_disp_).numpy()[0]
+                    # np.save(output_dir/'{:04d}{}'.format(i,'.npy'), output_disp_n)
+                    # disp = (255*tensor2array(torch.from_numpy(output_disp_n), max_value=args.nlabel, colormap='bone')).astype(np.uint8)
+                    # # imsave(output_dir/'{:04d}_disp{}'.format(i,'.png'), disp)
+                    # pil_disp = Image.fromarray(disp)
+                    # pil_disp.save(output_dir/'{:04d}_disp{}'.format(i,'.png'))
 
+                    # Save depthmaps.
+                    tgt_idepth = torch.squeeze(tgt_depth.data).cpu().numpy()
+                    tgt_idepth[tgt_idepth > 0] = 1.0 / tgt_idepth[tgt_idepth > 0]
+
+                    output_idepth_ = np.squeeze(np.copy(output_depth_))
+                    output_idepth_[output_idepth_ > 0] = 1.0 / output_idepth_[output_idepth_ > 0]
+
+                    left_filename = val_loader.dataset.samples[ii]["tgt"]
+                    left_dir, file_and_ext = os.path.split(left_filename)
+                    left_dir = left_dir.replace(args.data, "") # Strip dataset prefix.
+
+                    if left_dir[0] == "/":
+                        left_output_dir = os.path.join(output_dir, left_dir[1:])
+                    else:
+                        left_output_dir = os.path.join(output_dir, left_dir)
+
+                    image_num = os.path.splitext(file_and_ext)[0]
+                    if not os.path.exists(left_output_dir):
+                        os.makedirs(left_output_dir)
+                    assert(os.path.exists(left_output_dir))
+                    write_images(left_output_dir, image_num,
+                                 output_idepth_, tgt_idepth)
 
 
     mean_errors = errors.mean(2)
