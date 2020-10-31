@@ -117,6 +117,7 @@ def main():
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
+    runtimes = []
     left_filenames = []
     errors = np.zeros((2, 8, int(len(val_loader)/args.print_freq)+1), np.float32)
     with torch.no_grad():
@@ -159,6 +160,7 @@ def main():
                 errors[0,:,i] = compute_errors_test(tgt_depth[mask], output_depth_[mask], mean_depth)
                 errors[1,:,i] = compute_errors_test(tgt_disp[mask], output_disp_[mask], mean_depth)
                 left_filenames.append(str(left_filename))
+                runtimes.append(elps)
 
                 print('Elapsed Time {} Abs Error {:.4f}'.format(elps, errors[0,0,i]))
 
@@ -207,6 +209,7 @@ def main():
 
     np.savetxt(output_dir/'errors.csv', mean_errors, fmt='%1.4f', delimiter=',')
     np.savetxt(output_dir/"raw_depth_errors.csv", errors[0, :, :].T)
+    np.savetxt(output_dir/"runtimes.csv", runtimes)
 
     with open(output_dir/"left_filenames.txt", "w") as ff:
         for idx in range(len(left_filenames)):
