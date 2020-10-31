@@ -117,9 +117,10 @@ def main():
     if not os.path.isdir(output_dir):
         os.mkdir(output_dir)
 
+    left_filenames = []
     errors = np.zeros((2, 8, int(len(val_loader)/args.print_freq)+1), np.float32)
     with torch.no_grad():
-        for ii, (tgt_img, ref_imgs, ref_poses, intrinsics, intrinsics_inv, tgt_depth) in enumerate(val_loader):
+        for ii, (tgt_img, ref_imgs, ref_poses, intrinsics, intrinsics_inv, tgt_depth, left_filename) in enumerate(val_loader):
             if ii % args.print_freq == 0:
                 i = int(ii / args.print_freq)
                 tgt_img_var = Variable(tgt_img.cuda())
@@ -157,6 +158,7 @@ def main():
 
                 errors[0,:,i] = compute_errors_test(tgt_depth[mask], output_depth_[mask], mean_depth)
                 errors[1,:,i] = compute_errors_test(tgt_disp[mask], output_disp_[mask], mean_depth)
+                left_filenames.append(str(left_filename))
 
                 print('Elapsed Time {} Abs Error {:.4f}'.format(elps, errors[0,0,i]))
 
@@ -204,7 +206,36 @@ def main():
     print("{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(*mean_errors[1]))
 
     np.savetxt(output_dir/'errors.csv', mean_errors, fmt='%1.4f', delimiter=',')
+    np.savetxt(output_dir/"raw_depth_errors.csv", errors[0, :, :].T)
 
+    with open(output_dir/"left_filenames.txt", "w") as ff:
+        for idx in range(len(left_filenames)):
+            ff.write("{}\n".format(left_filenames[idx]))
+
+    mvs_errors = open(output_dir/"raw_depth_errors_mvs.csv", "w")
+    rgbd_errors = open(output_dir/"raw_depth_errors_rgbd.csv", "w")
+    sun3d_errors = open(output_dir/"raw_depth_errors_sun3d.csv", "w")
+    scenes11_errors = open(output_dir/"raw_depth_errors_scenes11.csv", "w")
+    for idx in range(len(left_filenames)):
+        if "mvs" in left_filenames[idx]:
+            mvs_errors.write("{},{},{},{},{},{},{},{}\n".format(
+                errors[0, 0, idx], errors[0, 1, idx], errors[0, 2, idx], errors[0, 3, idx],
+                errors[0, 4, idx], errors[0, 5, idx], errors[0, 6, idx], errors[0, 7, idx]))
+        elif "rgbd" in left_filenames[idx]:
+            rgbd_errors.write("{},{},{},{},{},{},{},{}\n".format(
+                errors[0, 0, idx], errors[0, 1, idx], errors[0, 2, idx], errors[0, 3, idx],
+                errors[0, 4, idx], errors[0, 5, idx], errors[0, 6, idx], errors[0, 7, idx]))
+        elif "sun3d" in left_filenames[idx]:
+            sun3d_errors.write("{},{},{},{},{},{},{},{}\n".format(
+                errors[0, 0, idx], errors[0, 1, idx], errors[0, 2, idx], errors[0, 3, idx],
+                errors[0, 4, idx], errors[0, 5, idx], errors[0, 6, idx], errors[0, 7, idx]))
+        elif "scenes11" in left_filenames[idx]:
+            scenes11_errors.write("{},{},{},{},{},{},{},{}\n".format(
+                errors[0, 0, idx], errors[0, 1, idx], errors[0, 2, idx], errors[0, 3, idx],
+                errors[0, 4, idx], errors[0, 5, idx], errors[0, 6, idx], errors[0, 7, idx]))
+        else:
+            print("Bad image: {}".format(left_filenames[idx]))
+            assert(False)
 
 if __name__ == '__main__':
     main()
